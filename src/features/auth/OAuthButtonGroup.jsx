@@ -27,9 +27,10 @@ export default function OAuthButtonGroup() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id_token: googleToken })
     });
-  const data = await res.json();
-  console.log(data);
-};
+    const data = await res.json();
+    console.log(data);
+    navigate('/boards');
+  };
 
   const handleGitHubLogin = () => {
     alert('GitHub OAuth chưa tích hợp – bạn cần đăng ký app GitHub và thêm backend handler.');
