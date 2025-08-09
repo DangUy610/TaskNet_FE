@@ -14,7 +14,7 @@ import { AuthProvider, WorkspaceProvider, ModalProvider } from './contexts';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <GoogleOAuthProvider clientId="230570345332-if0223t4bdf57r4g01p0prc359pcd093.apps.googleusercontent.com">
+    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
       <BrowserRouter>
         <AuthProvider>
           <WorkspaceProvider>
