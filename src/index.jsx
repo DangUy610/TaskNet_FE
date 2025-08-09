@@ -28,3 +28,4 @@ root.render(
     </GoogleOAuthProvider>
   </React.StrictMode>
 );
+console.log('GSI client:', process.env.REACT_APP_GOOGLE_CLIENT_ID);
