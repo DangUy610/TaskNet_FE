@@ -21,15 +21,14 @@ export default function OAuthButtonGroup() {
   };
 
   const handleGoogleSuccess = async (credentialResponse) => {
-    const googleToken = credentialResponse.credential;
-    const res = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/google/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id_token: googleToken })
-    });
-    const data = await res.json();
-    console.log(data);
-    navigate('/boards');
+    try {
+      const googleToken = credentialResponse.credential;
+      await loginWithGoogle(googleToken); // ✅ Gọi đúng context
+      navigate('/boards');
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || 'Google login failed. Please try again.';
+      alert(errorMsg);
+    }
   };
 
   const handleGitHubLogin = () => {
