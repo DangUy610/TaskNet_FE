@@ -66,7 +66,7 @@ export function AuthProvider({ children }) {
 
   const loginWithGoogle = useCallback(async (googleToken) => {
     // Gọi API google-login của backend
-    const res = await api.post('/auth/google-login/', { token: googleToken });
+    const res = await api.post('/auth/google/', { id_token: googleToken });
     const { token: access, refresh, user: userData } = res.data;
 
     // Lưu token và cập nhật state
