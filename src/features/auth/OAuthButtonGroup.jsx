@@ -46,7 +46,7 @@ export default function OAuthButtonGroup() {
         onError={() => alert('Google Login Failed')}
         theme="outline"
         size="large"
-        width="100%"  // Google sẽ tự đổi thành full container
+        width={411}  
         text="continue_with"
         shape="rect"
         logo_alignment="left"
