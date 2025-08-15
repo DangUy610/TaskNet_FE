@@ -16,8 +16,7 @@ const BoardItem = ({ board, onReopen, onDelete  }) => (
       <BoardThumbnail src={board.background || `https://placehold.co/40x32/E2E4E6/FFFFFF?text=%20`} />
       <div>
         <BoardNameLink href="#">{board.name}</BoardNameLink>
-        {/* Chúng ta cần thêm workspace name vào đây, backend cần trả về */}
-        <WorkspaceName>{board.workspace?.name || 'Unknown Workspace'}</WorkspaceName> 
+
       </div>
     </BoardInfo>
     <ActionButtons>
@@ -61,7 +60,7 @@ export default function ClosedBoardsModal({ show, onClose,onBoardReopened  }) {
   const handleReopen = async (board) => {
     try {
       // API call: PATCH { is_closed: false }
-      await boardApi.updateBoard(board.workspace.id, board.id, { is_closed: false });
+      await boardApi.updateBoard(board.id, { is_closed: false });
       // Cập nhật UI: loại board này khỏi danh sách đã đóng
       setClosedBoards(prev => prev.filter(b => b.id !== board.id));
 
@@ -80,7 +79,7 @@ export default function ClosedBoardsModal({ show, onClose,onBoardReopened  }) {
 
     try {
         // API call: DELETE /api/workspaces/.../boards/...
-        await boardApi.deleteBoard(boardToDelete.workspace.id, boardToDelete.id);
+        await boardApi.deleteBoard(boardToDelete.id);
         // Cập nhật UI
         setClosedBoards(prev => prev.filter(b => b.id !== boardToDelete.id));
         setBoardToDelete(null);

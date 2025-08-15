@@ -1,7 +1,7 @@
 // src/api/cardApi.js
 import api from './apiClient';
 import { cards, lists as listRoutes } from './apiRoutes';
-
+ 
 /**
  * Lấy danh sách card thuộc về MỘT CỘT (List) cụ thể.
  * @param {string | number} listId ID của cột cần lấy card.
@@ -63,3 +63,34 @@ export const batchUpdateCards = (updateData) =>
  */
 export const deleteCard = (cardId) =>
   api.delete(cards.detail(cardId));
+
+
+
+// ----- Comments -----
+export async function getCardComments(cardId) {
+  // api.get sẽ tự động thêm baseURL, nên chỉ cần đường dẫn tương đối
+  const { data } = await api.get(`/cards/${cardId}/comments/`);
+  return data;
+}
+
+export async function createComment(cardId, content) {
+  const { data } = await api.post(`/cards/${cardId}/comments/`, { content });
+  return data;
+}
+
+export async function updateComment(commentId, content) {
+  const { data } = await api.patch(`/comments/${commentId}/`, { content });
+  return data;
+}
+
+export async function deleteComment(commentId) {
+  await api.delete(`/comments/${commentId}/`);
+}
+
+// ----- Card description -----
+export async function updateCardDescription(cardId, description) {
+  // Hàm này thực chất giống hệt updateCard, bạn có thể gộp lại,
+  // nhưng để riêng cũng không sao.
+  const { data } = await api.patch(`/cards/${cardId}/`, { description });
+  return data;
+}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext  } from 'react';
 import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 
@@ -19,10 +19,12 @@ import { DragDropContext } from '@hello-pangea/dnd';
 
 import { fetchInboxCards, updateCard, createInboxCard } from '../../api/cardApi'; 
 
+import { AuthContext } from '../../contexts/AuthContext.jsx';
 
 export default function BoardDetailPage() {
   const navigate = useNavigate();
-  const { workspaceId, boardId } = useParams();
+  const { boardId } = useParams();
+  const { user: currentUser } = useContext(AuthContext);
   const numericBoardId = parseInt(boardId);
   const [background, setBackground] = useState('#e4f0f6');
   const [loading, setLoading] = useState(true);
@@ -49,7 +51,7 @@ export default function BoardDetailPage() {
       // ✅ Gọi API `PATCH` để cập nhật is_closed = true
       // Bạn cần tạo hàm này trong `boardApi.js`
       // updateBoard = (workspaceId, boardId, data) => api.patch(...)
-      await updateBoard(workspaceId, boardId, { is_closed: true });
+      await updateBoard(boardId, { is_closed: true });
 
       // ✅ Chuyển hướng người dùng về trang chủ hoặc trang boards
       navigate('/boards'); 
@@ -63,7 +65,7 @@ export default function BoardDetailPage() {
     setListToDelete({ id: listId, name: listName, cards: cardsInList });
   };
 
-  // ✅ TẠO HÀM XÁC NHẬN XÓA
+  //  TẠO HÀM XÁC NHẬN XÓA
   const handleConfirmDeleteList = async () => {
     if (!listToDelete) return;
 
@@ -94,10 +96,10 @@ export default function BoardDetailPage() {
 
   useEffect(() => {
     async function loadBoard() {
-      if (!workspaceId || !boardId) return;
+      if (!boardId) return;
       setLoading(true);
       try {
-        const res = await getBoard(workspaceId, boardId);
+        const res = await getBoard(boardId);
         setBackground(res.data.background || '#e4f0f6');
       } catch (err) {
         console.error('Lỗi fetch board:', err);
@@ -106,7 +108,7 @@ export default function BoardDetailPage() {
       }
     }
     loadBoard();
-  }, [workspaceId, boardId]);
+  }, [boardId]);
 
   useEffect(() => {
     const loadInboxCards = async () => {
@@ -397,15 +399,13 @@ export default function BoardDetailPage() {
     );
   };
 
-  const toggleComplete = async (index) => {
-    const updated = [...cards];
-    const card = updated[index];
-    const newCompleted = !card.completed;
-
+  const toggleComplete = async (cardId) => {
+    const cardToUpdate = cards.find(c => c.id === cardId);
+    if (!cardToUpdate) return;
+    
     try {
-      await updateCard(card.id, { completed: newCompleted });
-      updated[index].completed = newCompleted;
-      setCards(updated);
+      const updatedCardFromApi = await updateCard(cardId, { completed: !cardToUpdate.completed });
+      updateCardInState(updatedCardFromApi); // DÙNG HÀM TRUNG TÂM
     } catch (err) {
       console.error('❌ Lỗi cập nhật completed:', err);
     }
@@ -464,6 +464,42 @@ export default function BoardDetailPage() {
     </SplitContainer>
   );
 
+  const ensureCardStructure = (card) => ({
+    id: card.id,
+    name: card.name || '',
+    description: card.description || '',
+    due_date: card.due_date || null,
+    completed: card.completed ?? false,
+    list: card.list || null,
+    visibility: card.visibility || 'private',
+    status: card.status || 'doing',
+    position: card.position ?? 0,
+    labels: card.labels || [],
+    // Thêm các trường khác nếu cần
+  });
+
+  // TẠO HÀM CẬP NHẬT TRUNG TÂM
+  const updateCardInState = (updatedCard) => {
+    if (!updatedCard || !updatedCard.id) return; // Guard clause
+    const normalizedCard = ensureCardStructure(updatedCard);
+
+    // Cập nhật cho BoardPane
+    setLists(prevLists =>
+      prevLists.map(list => ({
+        ...list,
+        cards: list.cards.map(card =>
+          card.id === normalizedCard.id ? normalizedCard : card
+        )
+      }))
+    );
+
+    setCards(prevCards =>
+      prevCards.map(card =>
+        card.id === normalizedCard.id ? normalizedCard : card
+      )
+    );
+  };
+
   if (loading) return <div>Loading board...</div>;
 
   return (
@@ -478,22 +514,23 @@ export default function BoardDetailPage() {
             {renderPanes()}
         </DragDropContext>
         <BottomFloatingNav activeTabs={activeTabs} toggleTab={toggleTab} activeCount={activeTabs.length} />
-    </BoardWrapper>
+      </BoardWrapper>
 
-    <ConfirmationModal
-        show={!!listToDelete}
-        onClose={() => setListToDelete(null)}
-        onConfirm={handleConfirmDeleteList}
-        title="Delete List?"
-        body={
-          listToDelete && `Are you sure you want to delete the list "${listToDelete.name}"? 
-          All ${listToDelete.cards.length} cards in this list will be moved to your Inbox.`
-        }
-        confirmText="Delete and Move Cards"
-        confirmVariant="danger" // Vẫn dùng màu đỏ vì đây là hành động lớn
-    />
+      <ConfirmationModal
+          show={!!listToDelete}
+          onClose={() => setListToDelete(null)}
+          onConfirm={handleConfirmDeleteList}
+          title="Delete List?"
+          body={
+            listToDelete && `Are you sure you want to delete the list "${listToDelete.name}"? 
+            All ${listToDelete.cards.length} cards in this list will be moved to your Inbox.`
+          }
+          confirmText="Delete and Move Cards"
+          confirmVariant="danger" // Vẫn dùng màu đỏ vì đây là hành động lớn
+      />
 
-    {/* ✅ RENDER MODAL XÁC NHẬN ĐÓNG BẢNG */}
+
+      {/* ✅ RENDER MODAL XÁC NHẬN ĐÓNG BẢNG */}
       <ConfirmationModal
         show={showCloseConfirm}
         onClose={() => setShowCloseConfirm(false)}
@@ -502,9 +539,18 @@ export default function BoardDetailPage() {
         body="Are you sure you want to close this board? You can find and reopen closed boards later."
         confirmText="Close"
         confirmVariant="danger"
-      />
-
-  </>
+      />  
+      {selectedCard && (
+        <FullCardModal
+          card={selectedCard}
+          onClose={() => setSelectedCard(null)}
+          onCardUpdate={updateCardInState} // Giả sử bạn đã có hàm trung tâm này
+          
+          // 4. TRUYỀN BIẾN currentUser VÀO ĐÂY
+          currentUser={currentUser} 
+        />
+      )}
+    </>
   );
 }
 

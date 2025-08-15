@@ -118,9 +118,8 @@ export default function AuthForm({ mode = 'login' }) {
       if (err.response && err.response.data) {
 
         const errorData = err.response.data;
-        // Ví dụ: { "password": ["Mật khẩu phải có ít nhất 8 ký tự."], "email": ["Email này đã tồn tại."] }
 
-        // Chúng ta sẽ lấy tất cả các thông báo lỗi từ các trường và nối chúng lại
+        // sẽ lấy tất cả các thông báo lỗi từ các trường và nối chúng lại
         const errorMessages = Object.keys(errorData)
           .map(fieldName => {
             // errorData[fieldName] là một mảng các chuỗi lỗi

@@ -113,7 +113,7 @@ export default function BoardFilterPopup({
                 >
                   <input
                       type="checkbox"
-                      checked={filter.due === option.value}
+                      $checked={filter.due === option.value}
                       onChange={() => handleSingleSelectChange('due', option.value)}
                   />
                   <span>{option.label}</span>
@@ -139,21 +139,4 @@ export default function BoardFilterPopup({
         </Wrapper>
     );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

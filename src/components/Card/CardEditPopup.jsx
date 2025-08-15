@@ -1,14 +1,17 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState,useCallback  } from 'react';
 import styled from 'styled-components';
 import { BiLabel } from 'react-icons/bi';
 import { HiOutlineUserAdd } from 'react-icons/hi';
-import { BsCardText, BsClock, BsArrowsMove, BsFiles, BsLink45Deg, BsArchive } from 'react-icons/bs';
+import { BsCardText, BsClock, BsArrowsMove, BsFiles, BsLink45Deg, BsArchive, BsTextLeft  } from 'react-icons/bs';
 import LabelPopup from '../../components/Label/LabelPopup';
 import ConfirmationModal from './common/ConfirmationModal';
 import Portal from './common/Portal';
+import { toast } from 'react-hot-toast';
 
 import { fetchBoardLabels } from '../../api/boardApi';
 import { deleteCard } from '../../api/cardApi';
+import { updateCardDescription } from '../../api/cardApi';
+
 
 export default function CardEditPopup({
   anchorRect,
@@ -23,6 +26,7 @@ export default function CardEditPopup({
   updateCardLabels,
   onCardDeleted,
   isInboxMode = false,
+  onCardUpdate,
 }) {
   const labelButtonRef = useRef();
   const popupRef = useRef();
@@ -34,8 +38,9 @@ export default function CardEditPopup({
   const [labelError, setLabelError] = useState(null);
   const [labelAnchorRect, setLabelAnchorRect] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [saveState, setSaveState] = useState({ saving: false, error: null });
   
-  
+
   useEffect(() => {
     if (showLabelPopup && labelButtonRef.current) {
       requestAnimationFrame(() => {
@@ -93,13 +98,11 @@ export default function CardEditPopup({
   };
 
   const handleDeleteCard = async () => {
-    setShowDeleteConfirm(false); // Hide confirmation modal first
+    setShowDeleteConfirm(false); 
 
     try {
-      // ✅ FIX: API call is now made BEFORE updating the UI (pessimistic update)
       await deleteCard(card.id);
-
-      // On successful deletion, update the UI and close the popup
+      toast.success('Card deleted successfully');
       if (onCardDeleted) {
         onCardDeleted(card.id);
       }
@@ -107,20 +110,23 @@ export default function CardEditPopup({
     } catch (err) {
       console.error('❌ Failed to delete card:', err);
       // Inform user of the failure
-      alert('Failed to delete the card. Please check your connection and try again.');
+      toast.error('Failed to delete card. Please check connection and try again.');
     }
   };
 
-  const handleToggleLabel = (labelId) => {
-    const newLabels = card.labels.includes(labelId)
-      ? card.labels.filter((id) => id !== labelId)
-      : [...(card.labels || []), labelId];
-    card.labels = newLabels;
-  };
+  
+  const handleToggleLabel = useCallback((labelId) => {
+    updateCardLabels(card.id, (prevLabels) => 
+      prevLabels.includes(labelId)
+        ? prevLabels.filter(id => id !== labelId)
+        : [...prevLabels, labelId]
+    );
+  }, [card.id, updateCardLabels]);
 
   if (!card) {
     return null;
   }
+
 
   return (
     <Portal>
@@ -194,6 +200,7 @@ export default function CardEditPopup({
             <BsArchive />
             <span>Delete Card</span>
           </MenuItemDelete>
+          
         </MenuList>
       </Dialog>
 
@@ -208,11 +215,12 @@ export default function CardEditPopup({
             setShowLabelPopup(false);
             setLabelAnchorRect(null);
           }}
-          boardId={listId}
+          boardId={boardId}
           loadingLabels={loadingLabels}
           labelError={labelError}
         />
       )}
+
 
       {/* ✅ BƯỚC 3.6: RENDER MODAL XÁC NHẬN */}
       <ConfirmationModal
@@ -306,3 +314,4 @@ const MenuItemDelete = styled(MenuItem)`
     color: #ae2a19;
   }
 `;
+

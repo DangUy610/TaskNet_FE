@@ -1,20 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Form, Button } from 'react-bootstrap';
-import { FaLock, FaUsers, FaGlobe } from 'react-icons/fa';
+import { FaLock, FaGlobe } from 'react-icons/fa';
 import styled from 'styled-components';
 import BoardBackgroundPopup from './BoardBackgroundPopup';
 
 const visibilityOptions = [
   { key: 'private', label: 'Private', icon: <FaLock className="me-2" />, description: 'Only board members can see this board.' },
-  { key: 'workspace', label: 'Workspace', icon: <FaUsers className="me-2" />, description: 'All members of the workspace can see and edit this board.' },
-  { key: 'public', label: 'Public', icon: <FaGlobe className="me-2" />, description: 'Anyone on the internet can see this board.' }
+  { key: 'public',  label: 'Public',  icon: <FaGlobe className="me-2" />, description: 'Anyone on the internet can see this board.' }
 ];
 
 const colorOptions = ['rgb(168, 105, 193)', 'rgb(34, 140, 213)', '#00b8ff', '#f06292', '#0277bd'];
 
 export default function BoardThemeDrawer({ show, onClose, onCreate }) {
   const [title, setTitle] = useState('');
-  const [visibility, setVisibility] = useState('workspace');
+  const [visibility, setVisibility] = useState('private'); // ❗ default private
   const [error, setError] = useState('');
   const [background, setBackground] = useState(colorOptions[0]);
   const drawerRef = useRef();
@@ -37,11 +36,10 @@ export default function BoardThemeDrawer({ show, onClose, onCreate }) {
       setError('Board title is required');
       return;
     }
-    console.log('🧪 Gọi onCreate với dữ liệu:', { title, visibility, background }); // THÊM DÒNG NÀY
-
     onCreate({ title, visibility, background });
+    // Reset về mặc định
     setTitle('');
-    setVisibility('workspace');
+    setVisibility('private');
     setBackground(colorOptions[0]);
     setError('');
   };
@@ -73,7 +71,7 @@ export default function BoardThemeDrawer({ show, onClose, onCreate }) {
         {showBgPopup && (
           <BoardBackgroundPopup
             onClose={() => setShowBgPopup(false)}
-            onSelectBackground={setBackground} // Truyền setBackground trực tiếp
+            onSelectBackground={setBackground}
           />
         )}
       </Form.Group>
@@ -88,6 +86,7 @@ export default function BoardThemeDrawer({ show, onClose, onCreate }) {
             setError('');
           }}
           isInvalid={!!error}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); }}
         />
         {error && <ErrorText>👋 {error}</ErrorText>}
       </Form.Group>

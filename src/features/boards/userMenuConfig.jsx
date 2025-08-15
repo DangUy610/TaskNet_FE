@@ -39,10 +39,9 @@ export const getUserMenuConfig = ({ user, logout, openModal }) => {
     },
     { divider: true },
     { section: 'TASKNEST' },
-    {
-      label: 'Profile and visibility',
-      href: '/profile',
-    },
+
+    { label: 'Profile and visibility', href: '/settings/profile' },
+    
     {
       label: 'Activity',
       href: '/activity',

@@ -1,15 +1,12 @@
-import React, { useContext } from 'react';
-import { Col, ListGroup, Badge, Dropdown, Button } from 'react-bootstrap';
+import React from 'react';
+import { Col, ListGroup, Button } from 'react-bootstrap';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import { WorkspaceContext } from '../contexts/WorkspaceContext';
-import { FaTrello, FaFileAlt, FaHome, FaUsers, FaCog, FaCaretDown } from 'react-icons/fa';
+import { FaTrello, FaFileAlt, FaHome } from 'react-icons/fa';
 
 export default function SiderBar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { workspaces, currentWorkspaceId } = useContext(WorkspaceContext);
-  const currentWs = workspaces.find(w => w.id === currentWorkspaceId) || {};
 
   return (
     <Col xs={3} className="bg-white border-right p-3">
@@ -35,48 +32,7 @@ export default function SiderBar() {
         </StyledItem>
       </ListGroup>
 
-      {/* Workspaces dropdown */}
-      <div className="text-uppercase text-muted small mb-2">Your Workspaces</div>
-      <Dropdown className="mb-4">
-        <Dropdown.Toggle
-          as={CustomToggle}
-          className="w-100 text-left"
-          id="workspace-dropdown"
-        >
-          <div className="toggle-content">
-            {currentWs.name ? (
-              <>
-                <Badge bg="success" className="mr-2">
-                  {currentWs.name[0].toUpperCase()}
-                </Badge>
-                <span>{currentWs.name}</span>
-              </>
-            ) : (
-              <span>Workspace</span>
-            )}
-          </div>
-          <div className="caret-container">
-            <FaCaretDown className="caret-icon" />
-          </div>
-        </Dropdown.Toggle>
-        
-        <Dropdown.Menu as={CustomMenu} className="w-100">
-          <Dropdown.Item onClick={() => navigate('/boards')}>
-            <FaTrello className="mr-2" /> Boards
-          </Dropdown.Item>
-          <Dropdown.Item onClick={() => navigate('/members')}>
-            <FaUsers className="mr-2" /> Members
-          </Dropdown.Item>
-          <Dropdown.Item onClick={() => navigate('/settings')}>
-            <FaCog className="mr-2" /> Settings
-          </Dropdown.Item>
-          <Dropdown.Item>
-            <span style={{ color: '#6b46c1' }}>Upgrade</span>
-          </Dropdown.Item>
-        </Dropdown.Menu>
-      </Dropdown>
-
-      {/* Premium promo card */}
+      {/* Promo card */}
       <div className="p-3 border rounded">
         <h6>Try TaskNest Premium</h6>
         <p className="mb-1 small">
@@ -90,7 +46,7 @@ export default function SiderBar() {
   );
 }
 
-// Styled components
+/* Styled components */
 const StyledItem = styled(ListGroup.Item)`
   display: flex;
   align-items: center;
@@ -98,63 +54,14 @@ const StyledItem = styled(ListGroup.Item)`
   font-weight: 500;
   padding: 10px 12px;
   border: none;
-  background-color: ${({ isActive }) => (isActive ? '#e0f3e0' : 'transparent')};
-  color: ${({ isActive }) => (isActive ? '#28A745' : '#333')};
+  background-color: ${({ $isActive }) => ($isActive ? '#e0f3e0' : 'transparent')};
+  color: ${({ $isActive }) => ($isActive ? '#28A745' : '#333')};
 
-  &:hover {
-    background-color: #f4f5f7;
-  }
+  &:hover { background-color: #f4f5f7; }
 
   svg {
     margin-right: 8px;
-    color: ${({ isActive }) => (isActive ? '#28A745' : '#666')};
-  }
-`;
-
-const CustomToggle = styled.div`
-  background-color: #e2e4e6;
-  border: 1px solid #dfe1e6;
-  border-radius: 3px;
-  padding: 6px 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  &:hover {
-    background-color: #d3d6da;
-  }
-
-  .toggle-content {
-    display: flex;
-    align-items: center;
-    flex-grow: 1;
-  }
-
-  .caret-container {
-    display: flex;
-    align-items: center;
-  }
-`;
-
-const CustomMenu = styled(Dropdown.Menu)`
-  border: 1px solid #dfe1e6;
-  border-radius: 3px;
-  padding: 4px 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-
-  .dropdown-item {
-    padding: 6px 12px;
-    display: flex;
-    align-items: center;
-
-    svg {
-      margin-right: 8px;
-    }
-
-    &:hover {
-      background-color: #e2e4e6;
-    }
+    color: ${({ $isActive }) => ($isActive ? '#28A745' : '#666')};
   }
 `;
 

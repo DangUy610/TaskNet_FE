@@ -18,8 +18,9 @@ import isoWeek from 'dayjs/plugin/isoWeek';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import ShareBoardPopup from '../../../components/member/ShareBoardPopup';
 import { useFilter } from '../../../components/hook/useFilter';
-import { WorkspaceContext } from '../../../contexts'; 
 import { useContext } from 'react';
+
+import { toast } from 'react-hot-toast';
 
 dayjs.extend(isoWeek);
 dayjs.extend(isSameOrBefore);
@@ -130,7 +131,7 @@ export default function BoardPane({ background, boardId, lists, setLists, onList
     }
   };
 
-  // ✅ BƯỚC 4.1: TẠO HÀM CALLBACK ĐỂ XÓA CARD KHỎI STATE
+  // TẠO HÀM CALLBACK ĐỂ XÓA CARD KHỎI STATE
   const handleCardDeleted = (deletedCardId) => {
       setLists(prevLists => 
           prevLists.map(list => ({
@@ -140,11 +141,35 @@ export default function BoardPane({ background, boardId, lists, setLists, onList
       );
   };
 
+  const handleToggleCardComplete = async (cardId, listId) => {
+    console.log(`Đang cập nhật card có ID: ${cardId} trong list ID: ${listId}`);
+    const list = lists.find(l => l.id === listId);
+    const cardToUpdate = list?.cards.find(c => c.id === cardId);
+    if (!cardToUpdate) return;
+
+    // Gọi API để cập nhật backend
+    try {
+      const res = await updateCard(cardId, { completed: !cardToUpdate.completed });
+      const updatedCard = res?.data ?? res;
+      // Cập nhật state của frontend với dữ liệu chính xác từ server trả về
+      setLists(cur =>
+        cur.map(l => l.id === listId
+          ? { ...l, cards: l.cards.map(c => c.id === cardId ? updatedCard : c) }
+          : l
+        )
+      );
+    } catch (error) {
+      console.error("Failed to update card status:", error);
+      toast.error("Could not update card status.");
+    }
+  };
+
+
   // Logic lọc cards
   const filteredLists = lists.map((list) => ({
     ...list,
     cards: list.cards.filter((card) => {
-      const matchKeyword = card.name.toLowerCase().includes(filter.keyword.toLowerCase());
+      const matchKeyword = (card.name || '').toLowerCase().includes(filter.keyword.toLowerCase());
       const matchStatus =
         filter.status === 'all' ||
         (filter.status === 'completed' && card.completed) ||
@@ -178,7 +203,7 @@ export default function BoardPane({ background, boardId, lists, setLists, onList
   const textColor = getTextColor(background);
 
   return (
-    <Wrapper background={background}>
+    <Wrapper $background={background}>
       <BoardSubHeader
         boardName="My Board"
         setShowFilter={setShowFilter}
@@ -235,23 +260,23 @@ export default function BoardPane({ background, boardId, lists, setLists, onList
           card={editPopup.card}
           listId={editPopup.listId}
           boardId={boardId}
-          updateCardLabels={async (cardId, labels) => {
+          updateCardLabels={async (cardId, newLabels) => {
             try {
-              await updateCard(cardId, { labels });
-              setLists((prev) =>
-                prev.map((list) =>
-                  list.id === editPopup.listId
-                    ? {
-                        ...list,
-                        cards: list.cards.map((c) =>
-                          c.id === cardId ? { ...c, labels } : c
-                        ),
-                      }
-                    : list
-                )
-              );
+                // 1. Gọi API và NHẬN KẾT QUẢ trả về
+                const updatedCard = await updateCard(cardId, { labels: newLabels });
+
+                // 2. Dùng KẾT QUẢ ĐÓ để cập nhật state. Cách này luôn an toàn.
+                setLists(prevLists => 
+                  prevLists.map(list => ({
+                    ...list,
+                    cards: list.cards.map(card => 
+                      card.id === cardId ? updatedCard : card
+                    )
+                  }))
+                );
             } catch (err) {
-              console.error('❌ Failed to update card labels:', err);
+                console.error('❌ Failed to update card labels:', err);
+                toast.error("Could not update labels.");
             }
           }}
 
@@ -283,20 +308,7 @@ export default function BoardPane({ background, boardId, lists, setLists, onList
                           const rect = e.currentTarget.getBoundingClientRect();
                           setEditPopup({ anchorRect: rect, index, text: card.name, card, listId: list.id });
                         }}
-                        onCheckClick={(index) => {
-                          setLists((prev) =>
-                            prev.map((l) =>
-                              l.id === list.id
-                                ? {
-                                    ...l,
-                                    cards: l.cards.map((c, i) =>
-                                      i === index ? { ...c, completed: !c.completed } : c
-                                    ),
-                                  }
-                                : l
-                            )
-                          );
-                        }}
+                        onCheckClick={(cardId) => handleToggleCardComplete(cardId, list.id)}
                         onCardClick={(card) => setSelectedCard(card)}
                       />
                     </div>
@@ -354,7 +366,7 @@ export default function BoardPane({ background, boardId, lists, setLists, onList
 }
 
 // (Styled components giữ nguyên như trước)
-const Wrapper = styled.div`background: ${(props) => props.background}; height: 100%; overflow: auto;`;
+const Wrapper = styled.div`${({ $background }) => $background}; height: 100%; overflow: auto;`;
 const DarkOverlay = styled.div`position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); z-index: 998;`;
 
 const Overlay = styled.div`

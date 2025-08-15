@@ -1,24 +1,24 @@
 // src/api/boardApi.js
 import api from './apiClient';
-import { workspaces, boards } from './apiRoutes';
+import { boards } from './apiRoutes';
 
 /**
  * Board Management APIs
  */
-export const fetchBoards = (workspaceId) =>
-  api.get(workspaces.boards(workspaceId));
+export const fetchBoards = () =>
+  api.get(boards.list());
 
-export const createBoard = (workspaceId, data) =>
-  api.post(workspaces.boards(workspaceId), data);
+export const createBoard = (data) =>
+  api.post(boards.list(), data);
 
-export const getBoard = (workspaceId, boardId) =>
-  api.get(workspaces.boardDetail(workspaceId, boardId));
+export const getBoard = (boardId) =>
+  api.get(boards.detail(boardId));
 
-export const updateBoard = (workspaceId, boardId, data) =>
-  api.patch(workspaces.boardDetail(workspaceId, boardId), data);
+export const updateBoard = (boardId, data) =>
+  api.patch(boards.detail(boardId), data);
 
-export const deleteBoard = (workspaceId, boardId) =>
-  api.delete(workspaces.boardDetail(workspaceId, boardId));
+export const deleteBoard = (boardId) =>
+  api.delete(boards.detail(boardId));
 
 export const getClosedBoards = () =>
   api.get(boards.closed());

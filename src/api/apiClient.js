@@ -1,78 +1,102 @@
 // src/api/apiClient.js
 import axios from 'axios';
 
-// Lấy URL từ env (Vercel) và fallback về Railway khi dev hoặc chưa set
-const API_BASE = (process.env.REACT_APP_API_URL || 'https://tasknetbe-production.up.railway.app')
-  .replace(/\/+$/, ''); // bỏ mọi dấu "/" ở cuối
-
 const api = axios.create({
-  baseURL: `${API_BASE}/api`,
+  baseURL: `${process.env.REACT_APP_API_URL}/api`,
   withCredentials: false,
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
-// Theo dõi refresh
+// Biến để theo dõi quá trình làm mới token
 let isRefreshing = false;
+// Mảng để lưu trữ các request đang chờ được thực hiện lại
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
-  failedQueue.forEach(({ resolve, reject }) => {
-    if (error) reject(error);
-    else resolve(token);
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
   });
   failedQueue = [];
 };
 
-// Gắn access token vào mỗi request
-api.interceptors.request.use((config) => {
+// Add token to requests
+api.interceptors.request.use(config => {
   const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 
-// Xử lý refresh token khi 401
+// Handle refresh token on 401
 api.interceptors.response.use(
-  (res) => res,
-  async (err) => {
+  res => res,
+  async err => {
     const originalRequest = err.config;
 
-    // Chỉ xử lý 401 có refresh token và chưa retry
-    if (err.response?.status === 401 && !originalRequest?._retry && localStorage.getItem('refresh_token')) {
-      originalRequest._retry = true;
-
+    // Chỉ xử lý lỗi 401 và khi có refresh token
+    if (err.response?.status === 401 && localStorage.getItem('refresh_token')) {
       if (isRefreshing) {
-        // Nếu đang refresh, xếp hàng đợi
-        return new Promise((resolve, reject) => {
+        // Nếu đang có một request refresh khác chạy, hãy "xếp hàng" request này
+        return new Promise(function(resolve, reject) {
           failedQueue.push({ resolve, reject });
         })
-          .then((newToken) => {
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            return api(originalRequest);
-          })
-          .catch((queueErr) => Promise.reject(queueErr));
+        .then(token => {
+          originalRequest.headers['Authorization'] = 'Bearer ' + token;
+          return api(originalRequest);
+        })
+        .catch(err => {
+          return Promise.reject(err);
+        });
       }
-
+      
+      // Đánh dấu là đang bắt đầu quá trình refresh
+      originalRequest._retry = true;
       isRefreshing = true;
+
       try {
         const refreshToken = localStorage.getItem('refresh_token');
-        const res = await axios.post(`${API_BASE}/api/token/refresh/`, { refresh: refreshToken });
+        const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/token/refresh/`, {
+          refresh: refreshToken,
+        });
 
         const newAccessToken = res.data.access;
+        
+        // Lưu token mới
         localStorage.setItem('token', newAccessToken);
+        
+        // Cập nhật header cho các request mặc định sau này
+        api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+        
+        // Cập nhật header cho request gốc bị lỗi
+        originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
 
-        // Cập nhật mặc định và request gốc
-        api.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-
+        // Thực hiện lại tất cả các request đang chờ trong hàng đợi
         processQueue(null, newAccessToken);
+
+        // Thực hiện lại request gốc
         return api(originalRequest);
+        
       } catch (refreshErr) {
+        // Nếu refresh thất bại, logout người dùng
         processQueue(refreshErr, null);
+        
         localStorage.removeItem('token');
         localStorage.removeItem('refresh_token');
+        
+        // Gửi sự kiện để AuthContext có thể bắt và cập nhật UI
         window.dispatchEvent(new CustomEvent('unauthorized'));
+        
         return Promise.reject(refreshErr);
+
       } finally {
+        // Hoàn tất quá trình refresh
         isRefreshing = false;
       }
     }

@@ -11,5 +11,4 @@ export * from './authApi';
 export * from './boardApi';
 export * from './cardApi';
 export * from './listApi';
-export * from './workspaceApi';
 export * from './mockApi'; // Nếu bạn vẫn còn dùng mock

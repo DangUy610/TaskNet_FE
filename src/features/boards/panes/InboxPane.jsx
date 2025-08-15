@@ -167,9 +167,9 @@ export default function InboxPane({
         <Droppable droppableId="inbox" type="CARD">
           {(provided,snapshot) => (
             <CardList 
-            ref={provided.innerRef} 
-            {...provided.droppableProps}
-            isDraggingOver={snapshot.isDraggingOver}
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+              $isDraggingOver={snapshot.isDraggingOver}
             >
             {filteredCards.map((card, index) => (
               <Draggable key={card.id} draggableId={String(card.id)} index={index}>
@@ -188,7 +188,8 @@ export default function InboxPane({
                       onEditClick={(e, card, index, rect) => {
                         setEditPopup({ card, index, text: card.name, anchorRect: rect });
                       }}
-                      onCheckClick={toggleComplete}
+                      onCheckClick={toggleComplete} 
+
                       onCardClick={(card) => setSelectedCard(card)}
                     />
                   </div>
@@ -319,6 +320,6 @@ const CardList = styled.div`
 
   /* Thêm hiệu ứng khi kéo vào để người dùng biết họ có thể thả ở đây */
   transition: background-color 0.2s ease;
-  background-color: ${props => props.isDraggingOver ? 'rgba(0, 0, 0, 0.05)' : 'transparent'};
+  background: ${({ $isDraggingOver }) => $isDraggingOver ? 'rgba(12,102,228,0.1)' : 'transparent'};
 
 `;

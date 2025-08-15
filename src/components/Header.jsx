@@ -7,35 +7,33 @@ import {
   FormControl,
   Button,
 } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
-import { AuthContext, WorkspaceContext, ModalContext } from '../contexts';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext, ModalContext } from '../contexts';
 import { MdSearch, MdNotificationsNone } from 'react-icons/md';
 import { FiHelpCircle } from 'react-icons/fi';
 import { AiOutlineGlobal } from 'react-icons/ai';
 import AppsDropdown from './AppsDropdown';
 import UserDropdown from './UserDropdown';
 import CreateDropdown from './CreateDropdown';
-import CreateWorkspaceModal from '../features/workspaces/CreateWorkspaceModal';
-import SwitchAccountsModal from '../features/auth/SwitchAccountsModal';
 import BoardThemeDrawer from '../features/boards/BoardThemeDrawer';
+
+// ❗ NEW: API tạo board
+import { createBoard } from '../api/boardApi';
 
 export default function Header() {
   const { user, logout } = useContext(AuthContext);
-  const { workspaces, currentWorkspaceId, searchNav, setSearchNav } = useContext(WorkspaceContext);
   const { modals, closeModal } = useContext(ModalContext);
-  const currentWs = workspaces.find(w => w.id === currentWorkspaceId) || {};
   const navigate = useNavigate();
+
+  // Search state: chuyển về local (trước đây lấy từ WorkspaceContext)
+  const [searchNav, setSearchNav] = useState('');
 
   const [isFocused, setIsFocused] = useState(false);
   const [showCreateDropdown, setShowCreateDropdown] = useState(false);
   const dropdownRef = useRef(null);
   const [showBoardTheme, setShowBoardTheme] = useState(false);
 
-  
-
-  const handleSearchChange = (e) => {
-    setSearchNav(e.target.value);
-  };
+  const handleSearchChange = (e) => setSearchNav(e.target.value);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -46,6 +44,22 @@ export default function Header() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handleCreateBoard = async (data) => {
+    try {
+      // data: { title, visibility, background }
+      const res = await createBoard({
+        title: data.title,
+        visibility: data.visibility,
+        background: data.background,
+      });
+      setShowBoardTheme(false);
+      // điều hướng đến board mới
+      navigate(`/boards/${res.data.id}`);
+    } catch (err) {
+      console.error('Create board failed:', err?.response?.data || err.message);
+    }
+  };
 
   return (
     <>
@@ -62,10 +76,12 @@ export default function Header() {
               >
                 <span style={{ color: '#28A745', fontSize: '24px', fontWeight: 'bold' }}>TaskNest</span>
               </Navbar.Brand>
-
             </Nav>
 
-            <div className="d-flex align-items-center mx-auto" style={{ flex: '1 1 700px', maxWidth: 700, minWidth: 0 }}>
+            <div
+              className="d-flex align-items-center mx-auto"
+              style={{ flex: '1 1 700px', maxWidth: 700, minWidth: 0 }}
+            >
               <InputGroup
                 className="flex-grow-1"
                 style={{
@@ -121,11 +137,7 @@ export default function Header() {
                   <BoardThemeDrawer
                     show={showBoardTheme}
                     onClose={() => setShowBoardTheme(false)}
-                    onCreate={(data) => {
-                      console.log('Create board:', data);
-                      setShowBoardTheme(false);
-                      // Optionally: Call API to create board
-                    }}
+                    onCreate={handleCreateBoard}
                   />
                 )}
               </div>
@@ -141,18 +153,8 @@ export default function Header() {
         </Container>
       </Navbar>
 
-      {modals.createWorkspace?.open && (
-        <CreateWorkspaceModal
-          onCreate={modals.createWorkspace.props.onCreate}
-          onClose={() => closeModal('createWorkspace')}
-        />
-      )}
-      {modals.switchAccounts?.open && (
-        <SwitchAccountsModal
-          onSwitch={modals.switchAccounts.props.onSwitch}
-          onClose={() => closeModal('switchAccounts')}
-        />
-      )}
+      {/* Gỡ bỏ hoàn toàn CreateWorkspaceModal & SwitchAccountsModal nếu không dùng */}
+      {/* Nếu ModalContext vẫn còn mở 2 modal này ở nơi khác, hãy xoá luôn các trigger liên quan workspace */}
     </>
   );
 }

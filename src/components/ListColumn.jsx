@@ -38,76 +38,120 @@ function ListColumn({
     <Wrapper $background={$background}>
       <Header $textColor={$textColor}>
         <HeaderTitle>{list.name}</HeaderTitle>
-        <Dropdown>
+
+        <Dropdown align="end" flip={false}>
           <Dropdown.Toggle as={MenuButton} id={`dropdown-list-${list.id}`}>
             <BsThreeDots />
           </Dropdown.Toggle>
-          <Dropdown.Menu>
-            <Dropdown.Divider />
-            <Dropdown.Item 
-              className="text-danger" 
+          <Menu
+            container={document.body}
+            renderOnMount
+            popperConfig={{ strategy: 'fixed' }}
+          >
+            <MenuHeader>
+              List actions
+              <CloseX onClick={(e)=> {
+                // đóng menu khi bấm X
+                const btn = document.getElementById(`dropdown-list-${list.id}`);
+                btn && btn.click();
+              }}>×</CloseX>
+            </MenuHeader>
+
+            <MenuItem onClick={() => setActiveCardInput(list.id)}>Add card</MenuItem>
+            <MenuItem onClick={() => {/* TODO: copy */}}>Copy list</MenuItem>
+            <MenuItem onClick={() => {/* TODO: move */}}>Move list</MenuItem>
+            <MenuItem onClick={() => {/* TODO: watch */}}>Watch</MenuItem>
+
+            <Divider />
+
+            <MenuSectionTitle>Change list color</MenuSectionTitle>
+            <UpsellCard>
+              <strong>Upgrade to change list colors</strong>
+              <div>List colors can make your board fun and help organize your board visually.</div>
+              <a href="#">Start free trial</a>
+            </UpsellCard>
+
+            <Divider />
+
+            <MenuSectionTitle>Automation</MenuSectionTitle>
+            <MenuItem onClick={() => {/* TODO */}}>When a card is added to the list…</MenuItem>
+            <MenuItem onClick={() => {/* TODO sort modal */}}>Every day, sort list by…</MenuItem>
+            <MenuItem onClick={() => {/* TODO */}}>Every Monday, sort list by…</MenuItem>
+            <MenuItem onClick={() => {/* TODO rule modal */}}>Create a rule</MenuItem>
+
+            <Divider />
+
+            <MenuItem onClick={() => {/* TODO: archive */}}>Archive this list</MenuItem>
+            <MenuItem
+              className="text-danger"
               onClick={() => onListDeleted(list.id, list.name, list.cards)}
             >
-              Delete this list...
-            </Dropdown.Item>
-          </Dropdown.Menu>
+              Delete this list…
+            </MenuItem>
+          </Menu>
         </Dropdown>
       </Header>
 
       {/* ✅ Vùng thả cho các card */}
       <Droppable droppableId={`list-${list.id}`} type="CARD">
-        {(provided) => (
-          <CardList ref={provided.innerRef} {...provided.droppableProps}>
-            {hasCards &&
-              list.cards.map((card, index) => (
-                <li key={card.id}>
-                  <Draggable key={card.id} draggableId={String(card.id)} index={index}>
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                        draggingOver={snapshot.isDraggingOver ? 1 : 0}
-                      >
-                        <CardItem
-                          draggingOver={snapshot.draggingOver}
-                          card={card}
-                          index={index}
-                          isDragging={snapshot.isDragging}
-                          onEditClick={(e) => onEditClick(e, card, index)}
-                          onCheckClick={() => onCheckClick(index)}
-                          onCardClick={onCardClick}
-                        />
-                      </div>
-                    )}
-                  </Draggable>
-                </li>
-                  
-              ))}
-              {/* ✅ Thêm card mới */}
-              {isInputActive ? (
-                <li>
-                  <CardComposerForm onSubmit={handleAddCard}>
-                    <StyledTextarea
-                      value={cardInput}
-                      onChange={handleInputChange}
-                      placeholder="Enter a title or paste a link"
-                      autoFocus
-                    />
-                    <CardComposerActions>
-                      <AddCardButton type="submit">Add card</AddCardButton>
-                      <CancelButton type="button" onClick={() => setActiveCardInput(null)}>✕</CancelButton>
-                    </CardComposerActions>
-                  </CardComposerForm>
-                </li>
+        {(provided, snapshot) => (
+          <CardList
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            $isDraggingOver={snapshot.isDraggingOver} // dùng transient prop
+          >
+            {list.cards?.map((card, index) => {
+              const safeId = card?.id ?? `temp-${index}`;
+              return (
+                <Draggable
+                  key={`card-${safeId}`}
+                  draggableId={`card-${safeId}`}
+                  index={index}
+                >
+                  {(provided, snapshot) => (
+                    <li
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                    >
+                      <CardItem
+                        draggingOver={snapshot.draggingOver}
+                        card={card}
+                        index={index}
+                        isDragging={snapshot.isDragging}
+                        onEditClick={(e) => onEditClick(e, card, index)}
+                        onCheckClick={() => onCheckClick(card.id)}
+                        onCardClick={onCardClick}
+                      />
+                    </li>
+                  )}
+                </Draggable>
+              );
+            })}
+            {provided.placeholder}
+            
+            {/* ✅ Thêm card mới */}
+            {isInputActive ? (
+              <li>
+                <CardComposerForm onSubmit={handleAddCard}>
+                  <StyledTextarea
+                    value={cardInput}
+                    onChange={handleInputChange}
+                    placeholder="Enter a title or paste a link"
+                    autoFocus
+                  />
+                  <CardComposerActions>
+                    <AddCardButton type="submit">Add card</AddCardButton>
+                    <CancelButton type="button" onClick={() => setActiveCardInput(null)}>✕</CancelButton>
+                  </CardComposerActions>
+                </CardComposerForm>
+              </li>
             ) : (
               <AddCardBtn onClick={() => setActiveCardInput(list.id)}>+ Add a card</AddCardBtn>
             )}
-            {provided.placeholder}
           </CardList>
         )}
       </Droppable>
-
     </Wrapper>
   );
 }
@@ -183,8 +227,10 @@ const CardList = styled.ul`
   flex-direction: column;
   gap: 8px;
   min-height: 40px; // Ensure droppable area is visible even when empty
-  background: ${({ draggingOver }) =>
-    draggingOver ? 'rgba(12, 102, 228, 0.1)' : 'transparent'}; // Subtle highlight
+
+  background: ${({ $isDraggingOver }) =>
+    $isDraggingOver ? 'rgba(12, 102, 228, 0.1)' : 'transparent'};
+
   border-radius: 6px;
   transition: background 0.2s ease;
   width: 100%; // Ensure full width within container
@@ -201,6 +247,14 @@ const AddCardBtn = styled.button`
   font-weight: 500;
   cursor: pointer;
   text-align: left;
+  padding: 6px 8px;
+  border-radius: 4px;
+  width: 100%;
+
+  &:hover {
+    background-color: rgba(9, 30, 66, 0.08); /* màu hover Trello */
+    color: #172b4d;
+  }
 `;
 
 
@@ -249,4 +303,54 @@ const CancelButton = styled.button`
   &:hover {
     color: #172b4d;
   }
+`;
+
+
+
+// đặt gần cuối file ListColumn.jsx, chung chỗ các styled components khác
+const Menu = styled(Dropdown.Menu)`
+  min-width: 304px;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(9,30,66,.25), 0 0 0 1px rgba(9,30,66,.08);
+  overflow: hidden;
+`;
+
+const MenuHeader = styled.div`
+  position: sticky; top: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 12px 16px;
+  background: #f7f8f9;
+  font-weight: 600; color: #172b4d; font-size: 14px;
+  border-bottom: 1px solid #e4e6ea;
+`;
+
+const CloseX = styled.button`
+  position: absolute; right: 8px; top: 8px;
+  background: transparent; border: 0; border-radius: 6px; padding: 6px;
+  cursor: pointer; color: #44546f;
+  &:hover { background: #091e4214; }
+`;
+
+const MenuSectionTitle = styled.div`
+  padding: 10px 12px 4px;
+  font-size: 12px; font-weight: 600; color: #44546f;
+  text-transform: uppercase;
+`;
+
+const Divider = styled.div`
+  height: 1px; background: #091e4224; margin: 8px 0;
+`;
+
+const MenuItem = styled(Dropdown.Item)`
+  padding: 8px 12px; font-size: 14px; color: #172b4d;
+  &:hover, &:focus { background: #091e4214; color: #172b4d; }
+`;
+
+const UpsellCard = styled.div`
+  margin: 4px 12px 8px; padding: 12px;
+  background: #f7f8f9; border-radius: 8px; color: #44546f;
+  font-size: 12px; line-height: 1.4;
+  a { color: #0c66e4; text-decoration: underline; }
 `;

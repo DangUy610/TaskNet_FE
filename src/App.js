@@ -11,6 +11,7 @@ import HomePage from './features/home/HomePage';
 import BoardDetailPage from './features/boards/BoardDetailPage';
 import PrivateRoute from './Layouts/PrivateRoute';
 import WithHeaderOnlyLayout from './Layouts/WithHeaderOnlyLayout.jsx'; // thêm dòng này
+import ProfileAndVisibility from './features/boards/settings/profileandvisibility/ProfileAndVisibility.jsx';
 
 import { GlobalStyle } from './styles/GlobalStyle';
 
@@ -29,11 +30,14 @@ function App() {
     <>
       <GlobalStyle/>
       <Routes>
+        {/* Auth */}
         <Route path="/login" element={<AuthForm mode="login" />} />
         <Route path="/register" element={<AuthForm mode="register" />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+
+        {/* App routes with header */}
         <Route
-          path="/workspaces/:workspaceId/boards/:boardId"
+          path="/boards/:boardId"
           element={
             <PrivateRoute>
               <WithHeaderOnlyLayout>
@@ -43,11 +47,22 @@ function App() {
           }
         />
         <Route
-          path="/workspaces/:workspaceId/boards/:boardId/inbox"
+          path="/boards/:boardId/inbox"
           element={
             <PrivateRoute>
               <WithHeaderOnlyLayout>
                 <BoardDetailPage />
+              </WithHeaderOnlyLayout>
+            </PrivateRoute>
+          }
+        />
+        {/* Settings - bảo vệ + header */}
+        <Route
+          path="/settings/profile"
+          element={
+            <PrivateRoute>
+              <WithHeaderOnlyLayout>
+                <ProfileAndVisibility />
               </WithHeaderOnlyLayout>
             </PrivateRoute>
           }
@@ -80,6 +95,7 @@ function App() {
 
         <Route path="/" element={<LogoutRedirect />} />
         <Route path="*" element={<Navigate to="/boards" replace />} />
+        
       </Routes>
     </>
   );

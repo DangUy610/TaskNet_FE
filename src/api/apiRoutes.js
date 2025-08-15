@@ -8,15 +8,11 @@ export const auth = {
   switchAccount: () => '/auth/switch-account/',
 };
 
-// Workspace & Board Routes
-export const workspaces = {
-  list: () => '/workspaces/', // GET, POST
-  boards: (workspaceId) => `/workspaces/${workspaceId}/boards/`, // GET, POST
-  boardDetail: (workspaceId, boardId) => `/workspaces/${workspaceId}/boards/${boardId}/`, // GET
-};
+
 
 // Board specific resources
 export const boards = {
+  list: () => '/boards/', // Lấy danh sách boards
   // Lấy/Tạo List (cột) trong một board
   lists: (boardId) => `/boards/${boardId}/lists/`,
   // Lấy/Tạo Label trong một board
@@ -24,6 +20,7 @@ export const boards = {
   // Quản lý thành viên của board
   members: (boardId) => `/boards/${boardId}/members/`,
   closed: () => '/boards/closed/',
+  detail: (boardId) => `/boards/${boardId}/`, // Lấy thông tin chi tiết của board
 };
 
 // List (Column) Routes
