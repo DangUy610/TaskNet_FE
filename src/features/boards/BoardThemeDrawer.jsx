@@ -36,7 +36,7 @@ export default function BoardThemeDrawer({ show, onClose, onCreate }) {
       setError('Board title is required');
       return;
     }
-    onCreate({ title, visibility, background });
+    onCreate({ name:title, visibility, background });
     // Reset về mặc định
     setTitle('');
     setVisibility('private');
