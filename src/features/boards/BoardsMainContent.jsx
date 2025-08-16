@@ -40,7 +40,7 @@ export default function BoardsMainContent({ onCreateBoard }) {
     // data từ BoardThemeDrawer: { title, visibility, background, ... }
     try {
       const res = await createBoard({
-        title: data.title,           // ❗ backend dùng "title"
+        name: data.name,           
         visibility: data.visibility,
         background: data.background,
       });
